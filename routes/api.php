@@ -14,9 +14,28 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login']);
 
+// Public routes for frontend fetching
 Route::get('/pricing', [\App\Http\Controllers\PricingController::class, 'index']);
+Route::get('/pricing/{id}', [\App\Http\Controllers\PricingController::class, 'show']);
 Route::get('/modules', [\App\Http\Controllers\ModuleController::class, 'index']);
+Route::get('/modules/{id}', [\App\Http\Controllers\ModuleController::class, 'show']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+    
+    Route::post('/logout', [\App\Http\Controllers\AuthController::class, 'logout']);
+    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index']);
+
+    // CMS CRUD Routes
+    Route::post('/pricing', [\App\Http\Controllers\PricingController::class, 'store']);
+    Route::put('/pricing/{id}', [\App\Http\Controllers\PricingController::class, 'update']);
+    Route::delete('/pricing/{id}', [\App\Http\Controllers\PricingController::class, 'destroy']);
+
+    Route::post('/modules', [\App\Http\Controllers\ModuleController::class, 'store']);
+    Route::put('/modules/{id}', [\App\Http\Controllers\ModuleController::class, 'update']);
+    Route::delete('/modules/{id}', [\App\Http\Controllers\ModuleController::class, 'destroy']);
+});
