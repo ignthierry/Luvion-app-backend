@@ -16,18 +16,17 @@ class PricingTierSeeder extends Seeder
             [
                 'id' => 'Starter',
                 'name' => 'Starter',
-                'subtitle' => 'Starter',
-                'price' => 'Rp 0',
-                'original_price' => null,
-                'price_suffix' => '/bulan pertama',
-                'description' => 'Gratis 1 bulan pertama, selanjutnya Rp 50.000/bulan. Fokus pada tampilan yang menarik dan order lebih cepat.',
+                'subtitle' => 'Entry Level',
+                'price' => 'Rp 79.000',
+                'original_price' => 'Rp 99.000',
+                'price_suffix' => '/ bulan',
+                'description' => 'Untuk perorangan, pemilik toko kecil, atau bisnis yang baru mulai go-digital.',
                 'features' => [
-                    'Selanjutnya Rp 50.000 / bulan',
-                    'Mobile-First Design (Responsif di HP)',
-                    'Tombol WhatsApp Terintegrasi',
-                    'Katalog Produk / Layanan Menarik',
-                    'Profil Usaha Lengkap & Google Maps',
-                    'Form Pemesanan Pemesanan Modern'
+                    'Akses ke fitur utama (Basic)',
+                    '1 User (Owner)',
+                    'Maksimal 100 transaksi / bulan',
+                    'Kapasitas penyimpanan standar',
+                    'Self-service support (Panduan & Grup)'
                 ],
                 'popular' => false,
                 'highlight_color' => 'from-blue-500/10 to-transparent'
@@ -36,18 +35,16 @@ class PricingTierSeeder extends Seeder
                 'id' => 'Pro',
                 'name' => 'Paid Pro',
                 'subtitle' => 'Scale-Up',
-                'original_price' => 'Rp 150.000',
-                'price' => 'Rp 50.000',
-                'price_suffix' => '/bulan',
-                'description' => 'Harga promo untuk 3 bulan pertama, selanjutnya Rp 150.000/bulan.',
+                'price' => 'Rp 199.000',
+                'original_price' => 'Rp 299.000',
+                'price_suffix' => '/ bulan',
+                'description' => 'Pilihan tepat untuk UKM dengan tim kecil yang mengandalkan efisiensi fitur otomatis.',
                 'features' => [
-                    'Selanjutnya Rp 150.000 / bulan',
-                    'Opsi Bayar Tahunan: Diskon 25%',
-                    'Seluruh Fitur Versi Starter',
-                    'Aplikasi Manajemen Pendukung Bisnis',
-                    'Kustom Domain Sendiri (.com/.id)',
-                    'Dukungan & Support Prioritas',
-                    'Pendampingan & Digital Marketing'
+                    'Semua fitur di paket Starter',
+                    '3 - 5 kuota akun staff',
+                    'Transaksi Harian/Bulanan Unlimited',
+                    'Fitur Otomatisasi (Notifikasi, Laporan, dll)',
+                    'Dukungan Prioritas via WhatsApp / Chat'
                 ],
                 'popular' => true,
                 'highlight_color' => 'from-[#ff8a65]/20 to-[#9f4122]/10'
@@ -55,17 +52,17 @@ class PricingTierSeeder extends Seeder
             [
                 'id' => 'Enterprise',
                 'name' => 'Enterprise',
-                'subtitle' => 'Korporat / Khusus',
+                'subtitle' => 'B2B / Agensi',
                 'price' => 'Kustom',
                 'original_price' => null,
                 'price_suffix' => '',
-                'description' => 'Solusi terbaik untuk integrasi skala enterprise, kustom AI, dan keandalan penuh.',
+                'description' => 'Untuk bisnis skala besar, butuh penyesuaian alur khusus atau integrasi penuh sistem internal.',
                 'features' => [
-                    'Seluruh Keunggulan Pro & Starter',
-                    'Kustomisasi & Automasi Penuh',
-                    'Integrasi Model AI Bisnis Mandiri',
-                    'Dedicated Environment',
-                    'Dedicated Account Manager & SLA'
+                    'Pengguna / Staff Unlimited',
+                    'Kustomisasi Domain Sendiri (Whitelabel)',
+                    'Akses API untuk Integrasi Pihak Ketiga',
+                    'Dedicated Server (Performa Diisolasi)',
+                    'Prioritas Dukungan Penuh (SLA Support)'
                 ],
                 'popular' => false,
                 'highlight_color' => 'from-purple-500/15 to-transparent'
@@ -73,7 +70,10 @@ class PricingTierSeeder extends Seeder
         ];
 
         foreach ($pricingTiers as $tier) {
-            \App\Models\PricingTier::create($tier);
+            \App\Models\PricingTier::updateOrCreate(
+                ['id' => $tier['id']],
+                $tier
+            );
         }
     }
 }
