@@ -53,4 +53,52 @@ class ClientOrderController extends Controller
             'data' => $order
         ], 201);
     }
+
+    public function index()
+    {
+        $orders = ClientOrder::orderBy('created_at', 'desc')->get();
+        return response()->json($orders);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $order = ClientOrder::findOrFail($id);
+        
+        $validator = Validator::make($request->all(), [
+            'status' => 'nullable|string|in:pending,processing,completed,cancelled',
+            'payment_status' => 'nullable|string|in:unpaid,paid,overdue,failed',
+            'billing_due_day' => 'nullable|integer|min:1|max:31',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $order->update($request->only(['status', 'payment_status', 'billing_due_day']));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Order updated successfully',
+            'data' => $order
+        ]);
+    }
+
+    public function destroy($id)
+    {
+        $order = ClientOrder::findOrFail($id);
+        
+        if ($order->logo_path) {
+            Storage::disk('public')->delete($order->logo_path);
+        }
+        
+        $order->delete();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Order deleted successfully'
+        ]);
+    }
 }

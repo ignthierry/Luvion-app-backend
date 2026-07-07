@@ -27,6 +27,8 @@ class ClientOrder extends Model
         'notes',
         'timeline',
         'status',
+        'payment_status',
+        'billing_due_day',
     ];
 
     protected $casts = [

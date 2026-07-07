@@ -21,6 +21,7 @@ Route::get('/pricing', [\App\Http\Controllers\PricingController::class, 'index']
 Route::get('/pricing/{id}', [\App\Http\Controllers\PricingController::class, 'show']);
 Route::get('/modules', [\App\Http\Controllers\ModuleController::class, 'index']);
 Route::get('/modules/{id}', [\App\Http\Controllers\ModuleController::class, 'show']);
+Route::get('/faq', [\App\Http\Controllers\FaqController::class, 'index']);
 Route::post('/orders', [\App\Http\Controllers\ClientOrderController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -44,4 +45,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/users', [\App\Http\Controllers\UserController::class, 'store']);
     Route::put('/users/{id}', [\App\Http\Controllers\UserController::class, 'update']);
     Route::delete('/users/{id}', [\App\Http\Controllers\UserController::class, 'destroy']);
+
+    Route::post('/faq', [\App\Http\Controllers\FaqController::class, 'store']);
+    Route::put('/faq/{id}', [\App\Http\Controllers\FaqController::class, 'update']);
+    Route::delete('/faq/{id}', [\App\Http\Controllers\FaqController::class, 'destroy']);
+
+    Route::get('/orders', [\App\Http\Controllers\ClientOrderController::class, 'index']);
+    Route::put('/orders/{id}', [\App\Http\Controllers\ClientOrderController::class, 'update']);
+    Route::delete('/orders/{id}', [\App\Http\Controllers\ClientOrderController::class, 'destroy']);
 });
