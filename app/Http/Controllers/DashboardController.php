@@ -8,50 +8,46 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        // Mocking dynamic data for the dashboard
+        $orders = \App\Models\ClientOrder::whereNotIn('status', ['cancelled'])->get();
+        $totalUsers = $orders->sum('users_count');
+        $activeSubscriptions = $orders->count();
+        $activeModules = \App\Models\Module::count();
+
+        // Calculate Revenue
+        $pricingTiers = \App\Models\PricingTier::all()->keyBy('name');
+        $revenue = 0;
+        foreach ($orders as $order) {
+            $tier = $pricingTiers->get($order->plan_name);
+            if ($tier) {
+                // Remove non-numeric characters for sum
+                $priceVal = (int) preg_replace('/[^0-9]/', '', $tier->price);
+                $revenue += $priceVal;
+            }
+        }
+
+        $formattedRevenue = 'Rp ' . number_format($revenue, 0, ',', '.');
+
         $stats = [
-            'total_users' => 1250,
-            'total_users_growth' => '+12.5%',
-            'active_subscriptions' => 840,
-            'active_subscriptions_growth' => '+5.2%',
-            'revenue' => 'Rp 45.200.000',
-            'revenue_growth' => '+18.1%',
-            'active_modules' => 15,
-            'active_modules_growth' => '+2',
+            'total_users' => $totalUsers,
+            'total_users_growth' => '+0%',
+            'active_subscriptions' => $activeSubscriptions,
+            'active_subscriptions_growth' => '+0%',
+            'revenue' => $formattedRevenue,
+            'revenue_growth' => '+0%',
+            'active_modules' => $activeModules,
+            'active_modules_growth' => '+0',
         ];
 
-        $recentActivity = [
-            [
-                'id' => 1,
-                'user' => 'Budi Santoso',
-                'action' => 'Berlangganan modul CRM AI',
-                'time' => '10 menit yang lalu'
-            ],
-            [
-                'id' => 2,
-                'user' => 'Siti Aminah',
-                'action' => 'Mengubah paket langganan ke Enterprise',
-                'time' => '1 jam yang lalu'
-            ],
-            [
-                'id' => 3,
-                'user' => 'Ahmad Reza',
-                'action' => 'Mendaftar akun baru',
-                'time' => '3 jam yang lalu'
-            ],
-            [
-                'id' => 4,
-                'user' => 'PT Maju Mundur',
-                'action' => 'Pembayaran tagihan bulan ini berhasil',
-                'time' => '5 jam yang lalu'
-            ],
-            [
-                'id' => 5,
-                'user' => 'CV Makmur Jaya',
-                'action' => 'Menambahkan modul Automasi Marketing',
-                'time' => '1 hari yang lalu'
-            ],
-        ];
+        // Recent Activity from Orders
+        $latestOrders = \App\Models\ClientOrder::orderBy('created_at', 'desc')->take(5)->get();
+        $recentActivity = $latestOrders->map(function($order) {
+            return [
+                'id' => $order->id,
+                'user' => $order->company_name,
+                'action' => 'Pesanan paket ' . $order->plan_name . ' (' . $order->status . ')',
+                'time' => $order->created_at->diffForHumans()
+            ];
+        });
 
         return response()->json([
             'stats' => $stats,
