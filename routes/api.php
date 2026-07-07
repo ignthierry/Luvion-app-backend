@@ -21,6 +21,7 @@ Route::get('/pricing', [\App\Http\Controllers\PricingController::class, 'index']
 Route::get('/pricing/{id}', [\App\Http\Controllers\PricingController::class, 'show']);
 Route::get('/modules', [\App\Http\Controllers\ModuleController::class, 'index']);
 Route::get('/modules/{id}', [\App\Http\Controllers\ModuleController::class, 'show']);
+Route::post('/orders', [\App\Http\Controllers\ClientOrderController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
