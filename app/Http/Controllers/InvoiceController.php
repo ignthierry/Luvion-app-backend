@@ -112,4 +112,47 @@ class InvoiceController extends Controller
             ], 500);
         }
     }
+
+    public function handleWebhook(Request $request)
+    {
+        $payload = $request->all();
+
+        $orderId = $payload['order_id'] ?? '';
+        $statusCode = $payload['status_code'] ?? '';
+        $grossAmount = $payload['gross_amount'] ?? '';
+        $signatureKeyIn = $payload['signature_key'] ?? '';
+        $serverKey = env('MIDTRANS_SERVER_KEY', '');
+        
+        // Verifikasi Signature Key dari Midtrans
+        $calculatedSignature = hash("sha512", $orderId . $statusCode . $grossAmount . $serverKey);
+
+        if ($calculatedSignature !== $signatureKeyIn) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid signature'
+            ], 403);
+        }
+
+        $transactionStatus = $payload['transaction_status'] ?? '';
+        
+        // Cari invoice berdasarkan order_id (yang diisi dengan invoice_number)
+        $invoice = Invoice::where('invoice_number', $orderId)->first();
+
+        if (!$invoice) {
+            return response()->json(['status' => 'error', 'message' => 'Invoice not found'], 404);
+        }
+
+        // Update status berdasarkan transaction_status Midtrans
+        if ($transactionStatus == 'capture' || $transactionStatus == 'settlement') {
+            $invoice->status = 'paid';
+        } else if ($transactionStatus == 'cancel' || $transactionStatus == 'deny' || $transactionStatus == 'expire') {
+            $invoice->status = 'failed';
+        } else if ($transactionStatus == 'pending') {
+            $invoice->status = 'unpaid';
+        }
+
+        $invoice->save();
+
+        return response()->json(['status' => 'success']);
+    }
 }
