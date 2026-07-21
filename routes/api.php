@@ -51,6 +51,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/faq/{id}', [\App\Http\Controllers\FaqController::class, 'destroy']);
 
     Route::get('/orders', [\App\Http\Controllers\ClientOrderController::class, 'index']);
+    Route::get('/orders/{id}', [\App\Http\Controllers\ClientOrderController::class, 'show']);
     Route::put('/orders/{id}', [\App\Http\Controllers\ClientOrderController::class, 'update']);
     Route::delete('/orders/{id}', [\App\Http\Controllers\ClientOrderController::class, 'destroy']);
+
+    // Invoice routes
+    Route::get('/orders/{id}/invoices', [\App\Http\Controllers\InvoiceController::class, 'indexByOrder']);
+    Route::post('/orders/{id}/invoices', [\App\Http\Controllers\InvoiceController::class, 'storeForOrder']);
+    Route::get('/invoices/{id}', [\App\Http\Controllers\InvoiceController::class, 'show']);
+    Route::post('/invoices/{id}/payment-link', [\App\Http\Controllers\InvoiceController::class, 'generatePaymentLink']);
 });

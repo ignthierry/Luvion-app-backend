@@ -60,11 +60,25 @@ class ClientOrderController extends Controller
         return response()->json($orders);
     }
 
+    public function show($id)
+    {
+        $order = ClientOrder::findOrFail($id);
+        return response()->json($order);
+    }
+
     public function update(Request $request, $id)
     {
         $order = ClientOrder::findOrFail($id);
         
         $validator = Validator::make($request->all(), [
+            'full_name' => 'nullable|string|max:255',
+            'company_name' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'plan_name' => 'nullable|string',
+            'billing_cycle' => 'nullable|string',
+            'users_count' => 'nullable|integer',
+            'pricing_payment' => 'nullable|numeric',
             'status' => 'nullable|string|in:pending,processing,completed,cancelled',
             'payment_status' => 'nullable|string|in:unpaid,paid,overdue,failed',
             'billing_due_day' => 'nullable|integer|min:1|max:31',
@@ -77,7 +91,11 @@ class ClientOrderController extends Controller
             ], 422);
         }
 
-        $order->update($request->only(['status', 'payment_status', 'billing_due_day']));
+        $order->update($request->only([
+            'full_name', 'company_name', 'email', 'phone', 
+            'plan_name', 'billing_cycle', 'users_count', 'pricing_payment', 
+            'status', 'payment_status', 'billing_due_day'
+        ]));
 
         return response()->json([
             'status' => 'success',
@@ -100,5 +118,65 @@ class ClientOrderController extends Controller
             'status' => 'success',
             'message' => 'Order deleted successfully'
         ]);
+    }
+
+    public function generatePaymentLink($id)
+    {
+        $order = ClientOrder::findOrFail($id);
+
+        if (!$order->pricing_payment || $order->pricing_payment <= 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tagihan tidak valid karena pricing_payment (harga) belum diset.'
+            ], 422);
+        }
+
+        $serverKey = env('MIDTRANS_SERVER_KEY');
+        if (empty($serverKey)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Midtrans Server Key tidak terbaca. Harap RESTART terminal "php artisan serve" Anda agar sistem membaca file .env yang baru.'
+            ], 500);
+        }
+
+        // Set Midtrans configuration
+        \Midtrans\Config::$serverKey = $serverKey;
+        \Midtrans\Config::$isProduction = env('MIDTRANS_IS_PRODUCTION', false);
+        \Midtrans\Config::$isSanitized = true;
+        \Midtrans\Config::$is3ds = true;
+
+        $params = array(
+            'transaction_details' => array(
+                'order_id' => 'LUV-' . $order->id . '-' . time(),
+                'gross_amount' => (int) $order->pricing_payment,
+            ),
+            'customer_details' => array(
+                'first_name' => $order->full_name,
+                'email' => $order->email,
+                'phone' => $order->phone,
+            ),
+        );
+
+        try {
+            $snapToken = \Midtrans\Snap::getSnapToken($params);
+            $paymentUrl = \Midtrans\Snap::createTransaction($params)->redirect_url;
+            
+            $order->update([
+                'snap_token' => $snapToken,
+                'payment_url' => $paymentUrl
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Link pembayaran berhasil dibuat.',
+                'payment_url' => $paymentUrl,
+                'snap_token' => $snapToken
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }
