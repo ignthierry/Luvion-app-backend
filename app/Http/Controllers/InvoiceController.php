@@ -64,17 +64,17 @@ class InvoiceController extends Controller
             ], 422);
         }
 
-        $serverKey = env('MIDTRANS_SERVER_KEY');
+        $serverKey = config('services.midtrans.server_key');
         if (empty($serverKey)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Midtrans Server Key tidak terbaca. Harap RESTART terminal "php artisan serve" Anda agar sistem membaca file .env yang baru.'
+                'message' => 'Midtrans Server Key tidak terbaca. Harap pastikan kunci serverMidtrans dimasukkan dengan benar di .env'
             ], 500);
         }
 
         // Set Midtrans configuration
         \Midtrans\Config::$serverKey = $serverKey;
-        \Midtrans\Config::$isProduction = env('MIDTRANS_IS_PRODUCTION', false);
+        \Midtrans\Config::$isProduction = config('services.midtrans.is_production', false);
         \Midtrans\Config::$isSanitized = true;
         \Midtrans\Config::$is3ds = true;
 
@@ -121,7 +121,7 @@ class InvoiceController extends Controller
         $statusCode = $payload['status_code'] ?? '';
         $grossAmount = $payload['gross_amount'] ?? '';
         $signatureKeyIn = $payload['signature_key'] ?? '';
-        $serverKey = env('MIDTRANS_SERVER_KEY', '');
+        $serverKey = config('services.midtrans.server_key', '');
         
         // Verifikasi Signature Key dari Midtrans
         $calculatedSignature = hash("sha512", $orderId . $statusCode . $grossAmount . $serverKey);

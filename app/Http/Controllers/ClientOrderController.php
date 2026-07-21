@@ -131,17 +131,17 @@ class ClientOrderController extends Controller
             ], 422);
         }
 
-        $serverKey = env('MIDTRANS_SERVER_KEY');
+        $serverKey = config('services.midtrans.server_key');
         if (empty($serverKey)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Midtrans Server Key tidak terbaca. Harap RESTART terminal "php artisan serve" Anda agar sistem membaca file .env yang baru.'
+                'message' => 'TESTING: Midtrans Server Key is still empty in ClientOrderController even after config cache.'
             ], 500);
         }
 
         // Set Midtrans configuration
         \Midtrans\Config::$serverKey = $serverKey;
-        \Midtrans\Config::$isProduction = env('MIDTRANS_IS_PRODUCTION', false);
+        \Midtrans\Config::$isProduction = config('services.midtrans.is_production', false);
         \Midtrans\Config::$isSanitized = true;
         \Midtrans\Config::$is3ds = true;
 
