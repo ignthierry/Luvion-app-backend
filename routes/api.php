@@ -25,7 +25,7 @@ Route::get('/faq', [\App\Http\Controllers\FaqController::class, 'index']);
 Route::post('/orders', [\App\Http\Controllers\ClientOrderController::class, 'store']);
 
 // Midtrans Webhook Notification
-Route::post('/midtrans/notification', [\App\Http\Controllers\InvoiceController::class, 'handleWebhook']);
+Route::match(['get', 'post'], '/midtrans/notification', [\App\Http\Controllers\InvoiceController::class, 'handleWebhook']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();

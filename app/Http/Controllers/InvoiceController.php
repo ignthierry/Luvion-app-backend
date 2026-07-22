@@ -115,6 +115,13 @@ class InvoiceController extends Controller
 
     public function handleWebhook(Request $request)
     {
+        if ($request->isMethod('get')) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Endpoint Webhook Midtrans Aktif. Midtrans akan mengirimkan sinyal notifikasi melalui HTTP POST.'
+            ]);
+        }
+
         $payload = $request->all();
 
         $orderId = $payload['order_id'] ?? '';
