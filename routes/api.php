@@ -64,4 +64,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/invoices/{id}/payment-link', [\App\Http\Controllers\InvoiceController::class, 'generatePaymentLink']);
     Route::post('/invoices/{id}/check-status', [\App\Http\Controllers\InvoiceController::class, 'checkStatus']);
     Route::post('/invoices/{id}/send-whatsapp', [\App\Http\Controllers\InvoiceController::class, 'sendWhatsApp']);
+
+    // Client Dashboard routes for Customer Role
+    Route::get('/client/dashboard', [\App\Http\Controllers\CustomerDashboardController::class, 'index']);
+    Route::post('/client/requests', [\App\Http\Controllers\CustomerDashboardController::class, 'storeRequest']);
 });

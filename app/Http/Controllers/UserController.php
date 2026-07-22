@@ -27,7 +27,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'sometimes|string|min:8',
-            'role' => 'required|in:admin,editor,viewer',
+            'role' => 'required|in:admin,customer,editor,viewer',
             'status' => 'required|in:active,inactive',
         ]);
 
@@ -61,7 +61,7 @@ class UserController extends Controller
             'name' => 'sometimes|string|max:255',
             'email' => ['sometimes', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|string|min:8',
-            'role' => 'sometimes|in:admin,editor,viewer',
+            'role' => 'sometimes|in:admin,customer,editor,viewer',
             'status' => 'sometimes|in:active,inactive',
         ]);
 

@@ -19,6 +19,18 @@ class AdminUserSeeder extends Seeder
             [
                 'name' => 'Luvion Admin',
                 'password' => Hash::make('password'),
+                'role' => 'admin',
+                'status' => 'active',
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'ign.thierry@gmail.com'],
+            [
+                'name' => 'NAJIH (Klien)',
+                'password' => Hash::make('password123'),
+                'role' => 'customer',
+                'status' => 'active',
             ]
         );
     }
