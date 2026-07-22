@@ -85,4 +85,47 @@ class CustomerDashboardController extends Controller
             'data' => $customerRequest
         ], 201);
     }
+
+    public function updateOrder(Request $request, $id)
+    {
+        $user = $request->user();
+
+        // Ensure order belongs to logged-in customer's email
+        $order = ClientOrder::where('id', $id)
+            ->where('email', $user->email)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'company_name' => 'nullable|string|max:255',
+            'full_name' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:50',
+            'subdomain' => 'nullable|string|max:255',
+            'theme_color' => 'nullable|string|max:50',
+            'purpose' => 'nullable|string',
+            'integration_needs' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $data = array_filter($request->only([
+            'company_name', 'full_name', 'phone', 
+            'subdomain', 'theme_color', 'purpose', 
+            'integration_needs', 'notes'
+        ]), function($val) {
+            return $val !== null;
+        });
+
+        if ($request->hasFile('logo')) {
+            $path = $request->file('logo')->store('logos', 'public');
+            $data['logo_path'] = $path;
+        }
+
+        $order->update($data);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Profil proyek & logo perusahaan berhasil diperbarui.',
+            'data' => $order
+        ]);
+    }
 }

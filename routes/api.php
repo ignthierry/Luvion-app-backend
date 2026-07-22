@@ -68,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Client Dashboard routes for Customer Role
     Route::get('/client/dashboard', [\App\Http\Controllers\CustomerDashboardController::class, 'index']);
     Route::post('/client/requests', [\App\Http\Controllers\CustomerDashboardController::class, 'storeRequest']);
+    Route::post('/client/orders/{id}', [\App\Http\Controllers\CustomerDashboardController::class, 'updateOrder']);
 
     // Admin Customer Requests management routes
     Route::get('/customer-requests', [\App\Http\Controllers\CustomerRequestController::class, 'index']);
