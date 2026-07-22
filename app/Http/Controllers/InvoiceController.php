@@ -78,9 +78,11 @@ class InvoiceController extends Controller
         \Midtrans\Config::$isSanitized = true;
         \Midtrans\Config::$is3ds = true;
 
+        $midtransOrderId = $invoice->invoice_number . '-' . time();
+
         $params = array(
             'transaction_details' => array(
-                'order_id' => $invoice->invoice_number . '-' . time(),
+                'order_id' => $midtransOrderId,
                 'gross_amount' => (int) $invoice->amount,
             ),
             'customer_details' => array(
@@ -95,6 +97,7 @@ class InvoiceController extends Controller
             $paymentUrl = \Midtrans\Snap::createTransaction($params)->redirect_url;
             
             $invoice->update([
+                'midtrans_order_id' => $midtransOrderId,
                 'snap_token' => $snapToken,
                 'payment_url' => $paymentUrl
             ]);
@@ -158,8 +161,18 @@ class InvoiceController extends Controller
             }
         }
 
-        // 4. Cari invoice berdasarkan order_id (invoice_number)
-        $invoice = Invoice::where('invoice_number', $orderId)->first();
+        // 4. Cari invoice berdasarkan midtrans_order_id atau invoice_number
+        $invoice = Invoice::where('midtrans_order_id', $orderId)
+            ->orWhere('invoice_number', $orderId)
+            ->first();
+
+        if (!$invoice && str_contains($orderId, '-')) {
+            $parts = explode('-', $orderId);
+            if (count($parts) >= 4) {
+                $baseInvoiceNumber = implode('-', array_slice($parts, 0, 4));
+                $invoice = Invoice::where('invoice_number', $baseInvoiceNumber)->first();
+            }
+        }
 
         if (!$invoice) {
             // Jika dummy order_id dari tes Midtrans tidak ada di DB, tetap kembalikan 200 OK
@@ -211,7 +224,8 @@ class InvoiceController extends Controller
         \Midtrans\Config::$isProduction = config('services.midtrans.is_production', false);
 
         try {
-            $midtransStatus = \Midtrans\Transaction::status($invoice->invoice_number);
+            $targetOrderId = $invoice->midtrans_order_id ?? $invoice->invoice_number;
+            $midtransStatus = \Midtrans\Transaction::status($targetOrderId);
             $transactionStatus = is_object($midtransStatus) ? $midtransStatus->transaction_status : ($midtransStatus['transaction_status'] ?? '');
             $paymentType = is_object($midtransStatus) ? ($midtransStatus->payment_type ?? null) : ($midtransStatus['payment_type'] ?? null);
 
@@ -240,6 +254,13 @@ class InvoiceController extends Controller
                 'message' => 'Status berhasil diperbarui: ' . strtoupper($invoice->status)
             ]);
         } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), "doesn't exist") || str_contains($e->getMessage(), "404")) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Transaksi belum diinisiasi di Midtrans. Silakan buka link pembayaran terlebih dahulu dan pilih metode pembayaran.'
+                ], 400);
+            }
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal sinkronisasi dari Midtrans: ' . $e->getMessage()
