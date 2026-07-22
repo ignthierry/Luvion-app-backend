@@ -302,13 +302,16 @@ class InvoiceController extends Controller
         $amountFormatted = number_format((float)$invoice->amount, 0, ',', '.');
         $dueDateFormatted = $invoice->due_date ? date('d M Y', strtotime($invoice->due_date)) : '-';
 
+        $frontendUrl = env('FRONTEND_URL', 'https://luvion.my.id');
+        $invoiceViewUrl = rtrim($frontendUrl, '/') . "/invoices/{$invoice->id}";
+
         $message = "Halo {$order->full_name},\n\n"
                  . "Berikut adalah tagihan untuk layanan Luvion SaaS ({$order->plan_name}).\n\n"
                  . "No. Invoice: {$invoice->invoice_number}\n"
                  . "Total Tagihan: Rp {$amountFormatted}\n"
                  . "Tanggal Jatuh Tempo: {$dueDateFormatted}\n\n"
-                 . "Silakan lakukan pembayaran melalui link berikut:\n"
-                 . "{$invoice->payment_url}\n\n"
+                 . "Silakan lihat detail invoice & lakukan pembayaran melalui link berikut:\n"
+                 . "{$invoiceViewUrl}\n\n"
                  . "Terima kasih,\n"
                  . "Tim Luvion";
 

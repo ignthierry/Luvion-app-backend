@@ -23,6 +23,7 @@ Route::get('/modules', [\App\Http\Controllers\ModuleController::class, 'index'])
 Route::get('/modules/{id}', [\App\Http\Controllers\ModuleController::class, 'show']);
 Route::get('/faq', [\App\Http\Controllers\FaqController::class, 'index']);
 Route::post('/orders', [\App\Http\Controllers\ClientOrderController::class, 'store']);
+Route::get('/invoices/{id}', [\App\Http\Controllers\InvoiceController::class, 'show']);
 
 // Midtrans Webhook Notification
 Route::match(['get', 'post'], '/midtrans/notification', [\App\Http\Controllers\InvoiceController::class, 'handleWebhook']);
@@ -60,7 +61,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Invoice routes
     Route::get('/orders/{id}/invoices', [\App\Http\Controllers\InvoiceController::class, 'indexByOrder']);
     Route::post('/orders/{id}/invoices', [\App\Http\Controllers\InvoiceController::class, 'storeForOrder']);
-    Route::get('/invoices/{id}', [\App\Http\Controllers\InvoiceController::class, 'show']);
     Route::post('/invoices/{id}/payment-link', [\App\Http\Controllers\InvoiceController::class, 'generatePaymentLink']);
     Route::post('/invoices/{id}/check-status', [\App\Http\Controllers\InvoiceController::class, 'checkStatus']);
     Route::post('/invoices/{id}/send-whatsapp', [\App\Http\Controllers\InvoiceController::class, 'sendWhatsApp']);
