@@ -170,6 +170,11 @@ class InvoiceController extends Controller
         }
 
         // 5. Update status berdasarkan transaction_status Midtrans
+        $paymentType = $payload['payment_type'] ?? null;
+        if ($paymentType) {
+            $invoice->payment_type = $paymentType;
+        }
+
         if ($transactionStatus == 'capture' || $transactionStatus == 'settlement') {
             $invoice->status = 'paid';
             $invoice->paid_at = now();
@@ -208,6 +213,11 @@ class InvoiceController extends Controller
         try {
             $midtransStatus = \Midtrans\Transaction::status($invoice->invoice_number);
             $transactionStatus = is_object($midtransStatus) ? $midtransStatus->transaction_status : ($midtransStatus['transaction_status'] ?? '');
+            $paymentType = is_object($midtransStatus) ? ($midtransStatus->payment_type ?? null) : ($midtransStatus['payment_type'] ?? null);
+
+            if ($paymentType) {
+                $invoice->payment_type = $paymentType;
+            }
 
             if ($transactionStatus == 'capture' || $transactionStatus == 'settlement') {
                 $invoice->status = 'paid';

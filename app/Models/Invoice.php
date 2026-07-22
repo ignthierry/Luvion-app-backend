@@ -17,6 +17,7 @@ class Invoice extends Model
         'due_date',
         'payment_url',
         'snap_token',
+        'payment_type',
         'paid_at',
     ];
 
