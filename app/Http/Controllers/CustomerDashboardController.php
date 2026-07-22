@@ -63,7 +63,7 @@ class CustomerDashboardController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'request_type' => 'required|string|in:addon,upgrade_plan,extra_licenses,custom_feature',
+            'request_type' => 'required|string|in:addon,upgrade_plan,extra_licenses,custom_feature,bug_report',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'client_order_id' => 'nullable|integer',

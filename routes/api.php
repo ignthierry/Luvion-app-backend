@@ -68,4 +68,22 @@ Route::middleware('auth:sanctum')->group(function () {
     // Client Dashboard routes for Customer Role
     Route::get('/client/dashboard', [\App\Http\Controllers\CustomerDashboardController::class, 'index']);
     Route::post('/client/requests', [\App\Http\Controllers\CustomerDashboardController::class, 'storeRequest']);
+
+    // Admin Customer Requests management routes
+    Route::get('/customer-requests', [\App\Http\Controllers\CustomerRequestController::class, 'index']);
+    Route::put('/customer-requests/{id}', [\App\Http\Controllers\CustomerRequestController::class, 'update']);
+    Route::delete('/customer-requests/{id}', [\App\Http\Controllers\CustomerRequestController::class, 'destroy']);
 });
+
+// Public Storage Fallback Route
+Route::get('/storage/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+    if (!file_exists($filePath)) {
+        abort(404);
+    }
+    $type = mime_content_type($filePath) ?: 'image/png';
+    return response()->file($filePath, [
+        'Content-Type' => $type,
+        'Cache-Control' => 'public, max-age=86400',
+    ]);
+})->where('path', '.*');

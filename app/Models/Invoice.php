@@ -14,6 +14,7 @@ class Invoice extends Model
         'invoice_number',
         'midtrans_order_id',
         'amount',
+        'description',
         'status',
         'due_date',
         'payment_url',

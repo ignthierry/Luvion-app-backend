@@ -19,12 +19,30 @@ class InvoiceController extends Controller
     {
         $order = ClientOrder::findOrFail($orderId);
 
-        if (!$order->pricing_payment || $order->pricing_payment <= 0) {
+        $validated = $request->validate([
+            'amount' => 'nullable|numeric|min:1000',
+            'description' => 'nullable|string',
+            'due_date' => 'nullable|date',
+        ]);
+
+        $amount = isset($validated['amount']) && $validated['amount'] > 0 
+            ? $validated['amount'] 
+            : ($order->pricing_payment ?: 0);
+
+        if (!$amount || $amount <= 0) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Pesanan ini belum memiliki harga dasar (pricing_payment). Harap atur harga langganan di detail pesanan terlebih dahulu.'
+                'message' => 'Harap masukkan nominal tagihan yang valid (minimal Rp 1.000).'
             ], 422);
         }
+
+        $description = !empty($validated['description']) 
+            ? $validated['description'] 
+            : "Langganan {$order->plan_name} ({$order->billing_cycle})";
+
+        $dueDate = !empty($validated['due_date']) 
+            ? $validated['due_date'] 
+            : ($order->billing_due_day ? date('Y-m-') . str_pad($order->billing_due_day, 2, '0', STR_PAD_LEFT) : date('Y-m-d', strtotime('+7 days')));
 
         // Generate Invoice Number (INV-YYYYMM-ORDERID-X)
         $yearMonth = date('Ym');
@@ -34,10 +52,10 @@ class InvoiceController extends Controller
         $invoice = Invoice::create([
             'client_order_id' => $order->id,
             'invoice_number' => $invoiceNumber,
-            'amount' => $order->pricing_payment,
+            'amount' => $amount,
+            'description' => $description,
             'status' => 'unpaid',
-            // Default due date to billing_due_day of the current month if exists, else +7 days
-            'due_date' => $order->billing_due_day ? date('Y-m-') . str_pad($order->billing_due_day, 2, '0', STR_PAD_LEFT) : date('Y-m-d', strtotime('+7 days'))
+            'due_date' => $dueDate
         ]);
 
         return response()->json([
@@ -80,11 +98,20 @@ class InvoiceController extends Controller
         \Midtrans\Config::$is3ds = true;
 
         $midtransOrderId = $invoice->invoice_number . '-' . time();
+        $itemDescription = $invoice->description ?: "Langganan {$order->plan_name} ({$order->billing_cycle})";
 
         $params = array(
             'transaction_details' => array(
                 'order_id' => $midtransOrderId,
                 'gross_amount' => (int) $invoice->amount,
+            ),
+            'item_details' => array(
+                array(
+                    'id' => 'INV-' . $invoice->id,
+                    'price' => (int) $invoice->amount,
+                    'quantity' => 1,
+                    'name' => substr($itemDescription, 0, 50),
+                )
             ),
             'customer_details' => array(
                 'first_name' => $order->full_name,
