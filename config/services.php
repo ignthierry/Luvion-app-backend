@@ -37,4 +37,10 @@ return [
         'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
     ],
 
+    'waha' => [
+        'base_url' => env('WAHA_BASE_URL', 'https://waha.luvion.my.id'),
+        'api_key' => env('WAHA_API_KEY', '8c958d8d204f4bc2a510cfe81cbbf903'),
+        'session' => env('WAHA_SESSION', 'default'),
+    ],
+
 ];

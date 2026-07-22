@@ -63,4 +63,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/invoices/{id}', [\App\Http\Controllers\InvoiceController::class, 'show']);
     Route::post('/invoices/{id}/payment-link', [\App\Http\Controllers\InvoiceController::class, 'generatePaymentLink']);
     Route::post('/invoices/{id}/check-status', [\App\Http\Controllers\InvoiceController::class, 'checkStatus']);
+    Route::post('/invoices/{id}/send-whatsapp', [\App\Http\Controllers\InvoiceController::class, 'sendWhatsApp']);
 });

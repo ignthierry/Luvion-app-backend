@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ClientOrder;
 use App\Models\Invoice;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class InvoiceController extends Controller
 {
@@ -264,6 +265,79 @@ class InvoiceController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal sinkronisasi dari Midtrans: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function sendWhatsApp($id)
+    {
+        $invoice = Invoice::with('clientOrder')->findOrFail($id);
+        $order = $invoice->clientOrder;
+
+        if (!$order || !$order->phone) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Nomor telepon/WhatsApp klien tidak ditemukan.'
+            ], 400);
+        }
+
+        if (empty($invoice->payment_url)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Link pembayaran belum dibuat. Harap buat link pembayaran terlebih dahulu.'
+            ], 400);
+        }
+
+        // Format Nomor Telepon ke format WhatsApp chatId (misal 6281357748559@c.us)
+        $phone = preg_replace('/[^0-9]/', '', $order->phone);
+        if (str_starts_with($phone, '0')) {
+            $phone = '62' . substr($phone, 1);
+        }
+        $chatId = str_contains($phone, '@') ? $phone : $phone . '@c.us';
+
+        $baseUrl = rtrim(config('services.waha.base_url', env('WAHA_BASE_URL', 'https://waha.luvion.my.id')), '/');
+        $apiKey = config('services.waha.api_key', env('WAHA_API_KEY', '8c958d8d204f4bc2a510cfe81cbbf903'));
+        $session = config('services.waha.session', env('WAHA_SESSION', 'default'));
+
+        $amountFormatted = number_format((float)$invoice->amount, 0, ',', '.');
+        $dueDateFormatted = $invoice->due_date ? date('d M Y', strtotime($invoice->due_date)) : '-';
+
+        $message = "Halo {$order->full_name},\n\n"
+                 . "Berikut adalah tagihan untuk layanan Luvion SaaS ({$order->plan_name}).\n\n"
+                 . "No. Invoice: {$invoice->invoice_number}\n"
+                 . "Total Tagihan: Rp {$amountFormatted}\n"
+                 . "Tanggal Jatuh Tempo: {$dueDateFormatted}\n\n"
+                 . "Silakan lakukan pembayaran melalui link berikut:\n"
+                 . "{$invoice->payment_url}\n\n"
+                 . "Terima kasih,\n"
+                 . "Tim Luvion";
+
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'X-Api-Key' => $apiKey,
+            ])->post("{$baseUrl}/api/sendText", [
+                'session' => $session,
+                'chatId' => $chatId,
+                'text' => $message,
+            ]);
+
+            if ($response->successful()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Pesan WhatsApp berhasil dikirim langsung via WAHA ke nomor ' . $order->phone
+                ]);
+            } else {
+                $errorData = $response->json();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal mengirim pesan via WAHA: ' . ($errorData['message'] ?? $response->body())
+                ], $response->status());
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal menghubungi server WAHA API: ' . $e->getMessage()
             ], 500);
         }
     }
