@@ -145,14 +145,68 @@ class InvoiceController extends Controller
         // Update status berdasarkan transaction_status Midtrans
         if ($transactionStatus == 'capture' || $transactionStatus == 'settlement') {
             $invoice->status = 'paid';
+            $invoice->paid_at = now();
+            $invoice->save();
+
+            if ($invoice->clientOrder) {
+                $invoice->clientOrder->payment_status = 'paid';
+                $invoice->clientOrder->save();
+            }
         } else if ($transactionStatus == 'cancel' || $transactionStatus == 'deny' || $transactionStatus == 'expire') {
             $invoice->status = 'failed';
+            $invoice->save();
         } else if ($transactionStatus == 'pending') {
             $invoice->status = 'unpaid';
+            $invoice->save();
         }
 
-        $invoice->save();
-
         return response()->json(['status' => 'success']);
+    }
+
+    public function checkStatus($id)
+    {
+        $invoice = Invoice::findOrFail($id);
+        $serverKey = config('services.midtrans.server_key', env('MIDTRANS_SERVER_KEY'));
+
+        if (empty($serverKey)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Midtrans Server Key belum dikonfigurasi di file .env'
+            ], 400);
+        }
+
+        \Midtrans\Config::$serverKey = $serverKey;
+        \Midtrans\Config::$isProduction = config('services.midtrans.is_production', false);
+
+        try {
+            $midtransStatus = \Midtrans\Transaction::status($invoice->invoice_number);
+            $transactionStatus = is_object($midtransStatus) ? $midtransStatus->transaction_status : ($midtransStatus['transaction_status'] ?? '');
+
+            if ($transactionStatus == 'capture' || $transactionStatus == 'settlement') {
+                $invoice->status = 'paid';
+                $invoice->paid_at = now();
+                $invoice->save();
+
+                if ($invoice->clientOrder) {
+                    $invoice->clientOrder->payment_status = 'paid';
+                    $invoice->clientOrder->save();
+                }
+            } else if ($transactionStatus == 'cancel' || $transactionStatus == 'deny' || $transactionStatus == 'expire') {
+                $invoice->status = 'failed';
+                $invoice->save();
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'transaction_status' => $transactionStatus,
+                'invoice_status' => $invoice->status,
+                'message' => 'Status berhasil diperbarui: ' . strtoupper($invoice->status)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal sinkronisasi dari Midtrans: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
