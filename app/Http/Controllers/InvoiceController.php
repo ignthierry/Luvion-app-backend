@@ -288,7 +288,7 @@ class InvoiceController extends Controller
             ], 400);
         }
 
-        // Format Nomor Telepon ke format WhatsApp chatId (misal 6281357748559@c.us)
+        // Format Nomor Telepon ke format WhatsApp chatId (misal 628197965599@c.us)
         $phone = preg_replace('/[^0-9]/', '', $order->phone);
         if (str_starts_with($phone, '0')) {
             $phone = '62' . substr($phone, 1);
