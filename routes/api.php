@@ -74,6 +74,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/customer-requests', [\App\Http\Controllers\CustomerRequestController::class, 'index']);
     Route::put('/customer-requests/{id}', [\App\Http\Controllers\CustomerRequestController::class, 'update']);
     Route::delete('/customer-requests/{id}', [\App\Http\Controllers\CustomerRequestController::class, 'destroy']);
+
+    // Admin Appointments management routes
+    Route::get('/appointments', [\App\Http\Controllers\AppointmentController::class, 'index']);
+    Route::post('/appointments', [\App\Http\Controllers\AppointmentController::class, 'store']);
+    Route::put('/appointments/{id}', [\App\Http\Controllers\AppointmentController::class, 'update']);
+    Route::delete('/appointments/{id}', [\App\Http\Controllers\AppointmentController::class, 'destroy']);
+
+    // Admin Chat Histories management routes
+    Route::get('/chat-histories', [\App\Http\Controllers\ChatHistoryController::class, 'index']);
+    Route::get('/chat-histories/sessions', [\App\Http\Controllers\ChatHistoryController::class, 'sessions']);
+    Route::delete('/chat-histories/{id}', [\App\Http\Controllers\ChatHistoryController::class, 'destroy']);
 });
 
 // Public Storage Fallback Route
