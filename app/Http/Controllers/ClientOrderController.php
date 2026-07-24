@@ -29,6 +29,10 @@ class ClientOrderController extends Controller
             'theme_color' => 'nullable|string',
             'notes' => 'nullable|string',
             'timeline' => 'nullable|date',
+            'pricing_payment' => 'nullable|numeric',
+            'status' => 'nullable|string|in:pending,processing,completed,cancelled',
+            'payment_status' => 'nullable|string|in:unpaid,paid,overdue,failed',
+            'billing_due_day' => 'nullable|integer|min:1|max:31',
         ]);
 
         if ($validator->fails()) {
