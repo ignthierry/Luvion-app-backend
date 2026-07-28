@@ -20,6 +20,7 @@ class ChatHistory extends Model
         'agent_response',
         'agent_type',
         'created_at',
+        'summary',
     ];
 
     protected $casts = [

@@ -24,7 +24,8 @@ class ChatHistoryController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('user_message', 'like', "%{$search}%")
                   ->orWhere('agent_response', 'like', "%{$search}%")
-                  ->orWhere('session_id', 'like', "%{$search}%");
+                  ->orWhere('session_id', 'like', "%{$search}%")
+                  ->orWhere('summary', 'like', "%{$search}%");
             });
         }
 
@@ -46,6 +47,14 @@ class ChatHistoryController extends Controller
      */
     public function sessions()
     {
+        $latestSummarySub = DB::table('chat_histories as ch2')
+            ->select('ch2.summary')
+            ->whereColumn('ch2.session_id', 'chat_histories.session_id')
+            ->whereNotNull('ch2.summary')
+            ->where('ch2.summary', '!=', '')
+            ->orderBy('ch2.id', 'desc')
+            ->limit(1);
+
         $sessions = DB::table('chat_histories')
             ->select(
                 'session_id',
@@ -54,6 +63,7 @@ class ChatHistoryController extends Controller
                 DB::raw('MAX(intent) as latest_intent'),
                 DB::raw('MAX(agent_type) as agent_type')
             )
+            ->selectSub($latestSummarySub, 'summary')
             ->groupBy('session_id')
             ->orderBy('last_activity', 'desc')
             ->get();
