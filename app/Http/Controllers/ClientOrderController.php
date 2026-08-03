@@ -135,38 +135,36 @@ class ClientOrderController extends Controller
             ], 422);
         }
 
-        $serverKey = config('services.midtrans.server_key');
-        if (empty($serverKey)) {
+        $secretKey = config('services.xendit.secret_key');
+        if (empty($secretKey)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'TESTING: Midtrans Server Key is still empty in ClientOrderController even after config cache.'
+                'message' => 'Xendit Secret Key is missing.'
             ], 500);
         }
 
-        // Set Midtrans configuration
-        \Midtrans\Config::$serverKey = $serverKey;
-        \Midtrans\Config::$isProduction = config('services.midtrans.is_production', false);
-        \Midtrans\Config::$isSanitized = true;
-        \Midtrans\Config::$is3ds = true;
-
-        $params = array(
-            'transaction_details' => array(
-                'order_id' => 'LUV-' . $order->id . '-' . time(),
-                'gross_amount' => (int) $order->pricing_payment,
-            ),
-            'customer_details' => array(
-                'first_name' => $order->full_name,
+        \Xendit\Configuration::setXenditKey($secretKey);
+        
+        $apiInstance = new \Xendit\Invoice\InvoiceApi();
+        
+        $create_invoice_request = new \Xendit\Invoice\CreateInvoiceRequest([
+            'external_id' => 'LUV-' . $order->id . '-' . time(),
+            'amount' => (int) $order->pricing_payment,
+            'description' => 'Payment for Order ' . $order->company_name,
+            'payer_email' => $order->email,
+            'customer' => [
+                'given_names' => $order->full_name,
                 'email' => $order->email,
-                'phone' => $order->phone,
-            ),
-        );
+                'mobile_number' => $order->phone,
+            ]
+        ]);
 
         try {
-            $snapToken = \Midtrans\Snap::getSnapToken($params);
-            $paymentUrl = \Midtrans\Snap::createTransaction($params)->redirect_url;
+            $result = $apiInstance->createInvoice($create_invoice_request);
+            $paymentUrl = $result['invoice_url'];
             
             $order->update([
-                'snap_token' => $snapToken,
+                'snap_token' => $result['id'],
                 'payment_url' => $paymentUrl
             ]);
 
@@ -174,7 +172,7 @@ class ClientOrderController extends Controller
                 'status' => 'success',
                 'message' => 'Link pembayaran berhasil dibuat.',
                 'payment_url' => $paymentUrl,
-                'snap_token' => $snapToken
+                'snap_token' => $result['id']
             ]);
         } catch (\Exception $e) {
             return response()->json([

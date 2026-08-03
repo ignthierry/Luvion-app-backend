@@ -12,7 +12,7 @@ class Invoice extends Model
     protected $fillable = [
         'client_order_id',
         'invoice_number',
-        'midtrans_order_id',
+        'xendit_id',
         'amount',
         'description',
         'status',

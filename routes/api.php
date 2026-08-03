@@ -25,8 +25,8 @@ Route::get('/faq', [\App\Http\Controllers\FaqController::class, 'index']);
 Route::post('/orders', [\App\Http\Controllers\ClientOrderController::class, 'store']);
 Route::get('/invoices/{id}', [\App\Http\Controllers\InvoiceController::class, 'show']);
 
-// Midtrans Webhook Notification
-Route::match(['get', 'post'], '/midtrans/notification', [\App\Http\Controllers\InvoiceController::class, 'handleWebhook']);
+// Xendit Webhook Notification
+Route::match(['get', 'post'], '/xendit/webhook', [\App\Http\Controllers\InvoiceController::class, 'handleWebhook']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();

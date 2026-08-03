@@ -83,58 +83,55 @@ class InvoiceController extends Controller
             ], 422);
         }
 
-        $serverKey = config('services.midtrans.server_key');
-        if (empty($serverKey)) {
+        $secretKey = config('services.xendit.secret_key');
+        if (empty($secretKey)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Midtrans Server Key tidak terbaca. Harap pastikan kunci serverMidtrans dimasukkan dengan benar di .env'
+                'message' => 'Xendit Secret Key tidak terbaca. Harap pastikan kunci dimasukkan dengan benar di .env'
             ], 500);
         }
 
-        // Set Midtrans configuration
-        \Midtrans\Config::$serverKey = $serverKey;
-        \Midtrans\Config::$isProduction = config('services.midtrans.is_production', false);
-        \Midtrans\Config::$isSanitized = true;
-        \Midtrans\Config::$is3ds = true;
+        \Xendit\Configuration::setXenditKey($secretKey);
+        
+        $apiInstance = new \Xendit\Invoice\InvoiceApi();
 
-        $midtransOrderId = $invoice->invoice_number . '-' . time();
+        $xenditOrderId = $invoice->invoice_number . '-' . time();
         $itemDescription = $invoice->description ?: "Langganan {$order->plan_name} ({$order->billing_cycle})";
 
-        $params = array(
-            'transaction_details' => array(
-                'order_id' => $midtransOrderId,
-                'gross_amount' => (int) $invoice->amount,
-            ),
-            'item_details' => array(
-                array(
-                    'id' => 'INV-' . $invoice->id,
-                    'price' => (int) $invoice->amount,
-                    'quantity' => 1,
-                    'name' => substr($itemDescription, 0, 50),
-                )
-            ),
-            'customer_details' => array(
-                'first_name' => $order->full_name,
+        $create_invoice_request = new \Xendit\Invoice\CreateInvoiceRequest([
+            'external_id' => $xenditOrderId,
+            'amount' => (int) $invoice->amount,
+            'description' => substr($itemDescription, 0, 255),
+            'payer_email' => $order->email,
+            'customer' => [
+                'given_names' => $order->full_name,
                 'email' => $order->email,
-                'phone' => $order->phone,
-            ),
-        );
+                'mobile_number' => $order->phone,
+            ],
+            'items' => [
+                [
+                    'name' => substr($itemDescription, 0, 50),
+                    'quantity' => 1,
+                    'price' => (int) $invoice->amount
+                ]
+            ]
+        ]);
 
         try {
-            $snapToken = \Midtrans\Snap::getSnapToken($params);
-            $paymentUrl = \Midtrans\Snap::createTransaction($params)->redirect_url;
+            $result = $apiInstance->createInvoice($create_invoice_request);
+            $paymentUrl = $result['invoice_url'];
             
             $invoice->update([
-                'midtrans_order_id' => $midtransOrderId,
-                'snap_token' => $snapToken,
+                'xendit_id' => $xenditOrderId,
+                'snap_token' => $result['id'],
                 'payment_url' => $paymentUrl
             ]);
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Link pembayaran Midtrans berhasil dibuat.',
+                'message' => 'Link pembayaran Xendit berhasil dibuat.',
                 'payment_url' => $paymentUrl,
-                'snap_token' => $snapToken
+                'snap_token' => $result['id']
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -149,48 +146,26 @@ class InvoiceController extends Controller
         if ($request->isMethod('get')) {
             return response()->json([
                 'status' => 'success',
-                'message' => 'Endpoint Webhook Midtrans Aktif. Midtrans akan mengirimkan sinyal notifikasi melalui HTTP POST.'
+                'message' => 'Endpoint Webhook Xendit Aktif.'
             ], 200);
         }
 
         $payload = $request->all();
 
-        // 1. Tangani jika payload kosong (misal ping dasar dari Midtrans)
-        if (empty($payload) || !isset($payload['order_id'])) {
+        // 1. Check if payload is valid
+        if (empty($payload) || !isset($payload['external_id'])) {
             return response()->json([
                 'status' => 'success',
-                'message' => 'Midtrans Webhook Test Ping Received'
+                'message' => 'Webhook Test Received'
             ], 200);
         }
 
-        $orderId = $payload['order_id'] ?? '';
-        $statusCode = $payload['status_code'] ?? '';
-        $grossAmount = $payload['gross_amount'] ?? '';
-        $signatureKeyIn = $payload['signature_key'] ?? '';
-        $serverKey = config('services.midtrans.server_key', env('MIDTRANS_SERVER_KEY'));
-        $transactionStatus = $payload['transaction_status'] ?? '';
-
-        // 2. Jika ini adalah tes otomatis dari tombol 'Test Notification URL' di Dashboard Midtrans
-        if (str_contains(strtolower($orderId), 'test') || empty($signatureKeyIn)) {
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Test Notification URL successful'
-            ], 200);
-        }
-
-        // 3. Verifikasi Signature Key untuk rilis transaksi asli
-        if (!empty($serverKey) && !empty($signatureKeyIn)) {
-            $calculatedSignature = hash("sha512", $orderId . $statusCode . $grossAmount . $serverKey);
-            if ($calculatedSignature !== $signatureKeyIn && !str_contains(strtolower($orderId), 'test')) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Invalid signature'
-                ], 403);
-            }
-        }
-
-        // 4. Cari invoice berdasarkan midtrans_order_id atau invoice_number
-        $invoice = Invoice::where('midtrans_order_id', $orderId)
+        $orderId = $payload['external_id'] ?? '';
+        $transactionStatus = $payload['status'] ?? '';
+        $paymentType = $payload['payment_method'] ?? null;
+        
+        // 4. Cari invoice berdasarkan xendit_id atau invoice_number
+        $invoice = Invoice::where('xendit_id', $orderId)
             ->orWhere('invoice_number', $orderId)
             ->first();
 
@@ -203,20 +178,17 @@ class InvoiceController extends Controller
         }
 
         if (!$invoice) {
-            // Jika dummy order_id dari tes Midtrans tidak ada di DB, tetap kembalikan 200 OK
             return response()->json([
                 'status' => 'success',
                 'message' => 'Notification received for ' . $orderId
             ], 200);
         }
 
-        // 5. Update status berdasarkan transaction_status Midtrans
-        $paymentType = $payload['payment_type'] ?? null;
         if ($paymentType) {
             $invoice->payment_type = $paymentType;
         }
 
-        if ($transactionStatus == 'capture' || $transactionStatus == 'settlement') {
+        if ($transactionStatus == 'PAID' || $transactionStatus == 'SETTLED') {
             $invoice->status = 'paid';
             $invoice->paid_at = now();
             $invoice->save();
@@ -225,10 +197,10 @@ class InvoiceController extends Controller
                 $invoice->clientOrder->payment_status = 'paid';
                 $invoice->clientOrder->save();
             }
-        } else if ($transactionStatus == 'cancel' || $transactionStatus == 'deny' || $transactionStatus == 'expire') {
+        } else if ($transactionStatus == 'EXPIRED') {
             $invoice->status = 'failed';
             $invoice->save();
-        } else if ($transactionStatus == 'pending') {
+        } else if ($transactionStatus == 'PENDING') {
             $invoice->status = 'unpaid';
             $invoice->save();
         }
@@ -239,29 +211,37 @@ class InvoiceController extends Controller
     public function checkStatus($id)
     {
         $invoice = Invoice::findOrFail($id);
-        $serverKey = config('services.midtrans.server_key', env('MIDTRANS_SERVER_KEY'));
+        $secretKey = config('services.xendit.secret_key');
 
-        if (empty($serverKey)) {
+        if (empty($secretKey)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Midtrans Server Key belum dikonfigurasi di file .env'
+                'message' => 'Xendit Secret Key belum dikonfigurasi di file .env'
             ], 400);
         }
 
-        \Midtrans\Config::$serverKey = $serverKey;
-        \Midtrans\Config::$isProduction = config('services.midtrans.is_production', false);
+        \Xendit\Configuration::setXenditKey($secretKey);
+        
+        $apiInstance = new \Xendit\Invoice\InvoiceApi();
 
         try {
-            $targetOrderId = $invoice->midtrans_order_id ?? $invoice->invoice_number;
-            $midtransStatus = \Midtrans\Transaction::status($targetOrderId);
-            $transactionStatus = is_object($midtransStatus) ? $midtransStatus->transaction_status : ($midtransStatus['transaction_status'] ?? '');
-            $paymentType = is_object($midtransStatus) ? ($midtransStatus->payment_type ?? null) : ($midtransStatus['payment_type'] ?? null);
+            $xenditInvoiceId = $invoice->snap_token;
+            if (!$xenditInvoiceId) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'ID Invoice Xendit tidak ditemukan. Silakan buat ulang link pembayaran.'
+                ], 400);
+            }
+            
+            $xenditInvoice = $apiInstance->getInvoiceById($xenditInvoiceId);
+            $transactionStatus = $xenditInvoice['status'] ?? '';
+            $paymentType = $xenditInvoice['payment_method'] ?? null;
 
             if ($paymentType) {
                 $invoice->payment_type = $paymentType;
             }
 
-            if ($transactionStatus == 'capture' || $transactionStatus == 'settlement') {
+            if ($transactionStatus == 'PAID' || $transactionStatus == 'SETTLED') {
                 $invoice->status = 'paid';
                 $invoice->paid_at = now();
                 $invoice->save();
@@ -270,7 +250,7 @@ class InvoiceController extends Controller
                     $invoice->clientOrder->payment_status = 'paid';
                     $invoice->clientOrder->save();
                 }
-            } else if ($transactionStatus == 'cancel' || $transactionStatus == 'deny' || $transactionStatus == 'expire') {
+            } else if ($transactionStatus == 'EXPIRED') {
                 $invoice->status = 'failed';
                 $invoice->save();
             }
@@ -282,16 +262,9 @@ class InvoiceController extends Controller
                 'message' => 'Status berhasil diperbarui: ' . strtoupper($invoice->status)
             ]);
         } catch (\Exception $e) {
-            if (str_contains($e->getMessage(), "doesn't exist") || str_contains($e->getMessage(), "404")) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Transaksi belum diinisiasi di Midtrans. Silakan buka link pembayaran terlebih dahulu dan pilih metode pembayaran.'
-                ], 400);
-            }
-
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal sinkronisasi dari Midtrans: ' . $e->getMessage()
+                'message' => 'Gagal sinkronisasi dari Xendit: ' . $e->getMessage()
             ], 500);
         }
     }
