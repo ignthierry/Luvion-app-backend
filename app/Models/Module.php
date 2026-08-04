@@ -12,4 +12,8 @@ class Module extends Model
     protected $guarded = [];
     public $incrementing = false;
     protected $keyType = 'string';
+
+    protected $casts = [
+        'is_hidden' => 'boolean',
+    ];
 }

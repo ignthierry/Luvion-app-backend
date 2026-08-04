@@ -7,9 +7,12 @@ use App\Models\Module;
 
 class ModuleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Module::all());
+        if ($request->has('all') && $request->all == 'true') {
+            return response()->json(Module::all());
+        }
+        return response()->json(Module::where('is_hidden', false)->get());
     }
 
     public function show($id)
@@ -30,6 +33,7 @@ class ModuleController extends Controller
             'demo_type' => 'required|string',
             'demo_title' => 'required|string',
             'demo_link' => 'nullable|string',
+            'is_hidden' => 'sometimes|boolean',
         ]);
 
         $module = Module::create($validated);
@@ -49,6 +53,7 @@ class ModuleController extends Controller
             'demo_type' => 'sometimes|required|string',
             'demo_title' => 'sometimes|required|string',
             'demo_link' => 'nullable|string',
+            'is_hidden' => 'sometimes|boolean',
         ]);
 
         $module->update($validated);
