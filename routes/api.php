@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('/logout', [\App\Http\Controllers\AuthController::class, 'logout']);
     Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index']);
+    Route::get('/user-logs', [\App\Http\Controllers\UserLogController::class, 'index']);
 
     // CMS CRUD Routes
     Route::post('/pricing', [\App\Http\Controllers\PricingController::class, 'store']);

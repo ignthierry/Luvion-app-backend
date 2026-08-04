@@ -150,6 +150,17 @@ class InvoiceController extends Controller
             ], 200);
         }
 
+        // Verify Xendit Webhook Token
+        $xenditXCallbackToken = $request->header('x-callback-token');
+        $expectedToken = config('services.xendit.webhook_token', env('XENDIT_WEBHOOK_TOKEN'));
+        
+        if ($expectedToken && $xenditXCallbackToken !== $expectedToken) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid Callback Token'
+            ], 403);
+        }
+
         $payload = $request->all();
 
         // 1. Check if payload is valid
