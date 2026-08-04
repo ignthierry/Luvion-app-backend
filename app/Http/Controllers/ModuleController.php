@@ -33,6 +33,7 @@ class ModuleController extends Controller
             'demo_type' => 'required|string',
             'demo_title' => 'required|string',
             'demo_link' => 'nullable|string',
+            'documentation' => 'nullable|string',
             'is_hidden' => 'sometimes|boolean',
         ]);
 
@@ -53,6 +54,7 @@ class ModuleController extends Controller
             'demo_type' => 'sometimes|required|string',
             'demo_title' => 'sometimes|required|string',
             'demo_link' => 'nullable|string',
+            'documentation' => 'nullable|string',
             'is_hidden' => 'sometimes|boolean',
         ]);
 
