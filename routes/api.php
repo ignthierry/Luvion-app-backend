@@ -86,6 +86,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/chat-histories', [\App\Http\Controllers\ChatHistoryController::class, 'index']);
     Route::get('/chat-histories/sessions', [\App\Http\Controllers\ChatHistoryController::class, 'sessions']);
     Route::delete('/chat-histories/{id}', [\App\Http\Controllers\ChatHistoryController::class, 'destroy']);
+
+    // Accounting Routes
+    Route::get('/accounting/accounts', [\App\Http\Controllers\AccountingController::class, 'getAccounts']);
+    Route::post('/accounting/accounts', [\App\Http\Controllers\AccountingController::class, 'storeAccount']);
+    Route::put('/accounting/accounts/{id}', [\App\Http\Controllers\AccountingController::class, 'updateAccount']);
+    Route::delete('/accounting/accounts/{id}', [\App\Http\Controllers\AccountingController::class, 'deleteAccount']);
+    
+    Route::get('/accounting/journals', [\App\Http\Controllers\AccountingController::class, 'getJournals']);
+    Route::post('/accounting/journals', [\App\Http\Controllers\AccountingController::class, 'storeJournal']);
+    
+    Route::get('/accounting/reports/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'getBalanceSheet']);
+    Route::get('/accounting/reports/income-statement', [\App\Http\Controllers\AccountingController::class, 'getIncomeStatement']);
 });
 
 // Public Storage Fallback Route
