@@ -35,6 +35,9 @@ class CoaSeeder extends Seeder
             ['code' => '5002', 'name' => 'Langganan Software', 'type' => 'Expense', 'description' => 'Biaya langganan GitHub, ChatGPT, dll'],
             ['code' => '5003', 'name' => 'Biaya Internet & Listrik', 'type' => 'Expense', 'description' => 'Biaya utilitas kantor/operasional'],
             ['code' => '5004', 'name' => 'Biaya Pemasaran', 'type' => 'Expense', 'description' => 'Biaya iklan atau marketing'],
+            ['code' => '5005', 'name' => 'Biaya Gaji', 'type' => 'Expense', 'description' => 'Biaya gaji karyawan'],
+            ['code' => '5006', 'name' => 'Biaya Transportasi', 'type' => 'Expense', 'description' => 'Biaya transportasi dan perjalanan'],
+            ['code' => '5007', 'name' => 'Biaya Operasional Lainnya', 'type' => 'Expense', 'description' => 'Biaya operasional lain yang tidak terduga'],
         ];
 
         foreach ($accounts as $account) {

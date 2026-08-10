@@ -208,6 +208,9 @@ class InvoiceController extends Controller
                 $invoice->clientOrder->payment_status = 'paid';
                 $invoice->clientOrder->save();
             }
+
+            // Automatic accounting: Debit Bank (or Receivable), Credit Revenue.
+            \App\Services\AccountingService::postRevenueFromInvoice($invoice);
         } else if ($transactionStatus == 'EXPIRED') {
             $invoice->status = 'failed';
             $invoice->save();

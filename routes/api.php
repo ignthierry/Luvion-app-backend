@@ -98,6 +98,12 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/accounting/reports/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'getBalanceSheet']);
     Route::get('/accounting/reports/income-statement', [\App\Http\Controllers\AccountingController::class, 'getIncomeStatement']);
+
+    // Pembiayaan (Expenses) Routes
+    Route::get('/expenses', [\App\Http\Controllers\ExpenseController::class, 'index']);
+    Route::get('/expenses/stats', [\App\Http\Controllers\ExpenseController::class, 'stats']);
+    Route::post('/expenses', [\App\Http\Controllers\ExpenseController::class, 'store']);
+    Route::delete('/expenses/{id}', [\App\Http\Controllers\ExpenseController::class, 'destroy']);
 });
 
 // Public Storage Fallback Route
