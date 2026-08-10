@@ -174,9 +174,17 @@ class AccountingService
             'marketing' => '5004',
             'gaji' => '5005',
             'transport' => '5006',
-            'lainnya' => '5007',
+            'operasional' => '5007',
+            'sewa' => '5008',
+            'bahan_baku' => '5009',
+            'lisensi' => '5010',
+            'konsumsi' => '5011',
+            'pelatihan' => '5012',
+            'komunikasi' => '5013',
+            'perawatan' => '5014',
+            'lainnya' => '5015',
         ];
 
-        return $map[$category] ?? '5007';
+        return $map[$category] ?? '5015';
     }
 }
