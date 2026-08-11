@@ -100,6 +100,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/accounting/reports/income-statement', [\App\Http\Controllers\AccountingController::class, 'getIncomeStatement']);
     Route::get('/accounting/ledger', [\App\Http\Controllers\AccountingController::class, 'getLedger']);
 
+    // Export laporan (Excel/PDF) untuk pelaporan pajak
+    Route::get('/accounting/export/ledger/excel', [\App\Http\Controllers\ExportController::class, 'ledgerExcel']);
+    Route::get('/accounting/export/ledger/pdf', [\App\Http\Controllers\ExportController::class, 'ledgerPdf']);
+    Route::get('/accounting/export/income/excel', [\App\Http\Controllers\ExportController::class, 'incomeExcel']);
+    Route::get('/accounting/export/income/pdf', [\App\Http\Controllers\ExportController::class, 'incomePdf']);
+    Route::get('/accounting/export/balance/excel', [\App\Http\Controllers\ExportController::class, 'balanceExcel']);
+    Route::get('/accounting/export/balance/pdf', [\App\Http\Controllers\ExportController::class, 'balancePdf']);
+
     // Pembiayaan (Expenses) Routes
     Route::get('/expenses', [\App\Http\Controllers\ExpenseController::class, 'index']);
     Route::get('/expenses/stats', [\App\Http\Controllers\ExpenseController::class, 'stats']);
