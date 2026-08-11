@@ -12,6 +12,8 @@ class Authenticate extends Middleware
      */
     protected function redirectTo(Request $request): ?string
     {
-        return $request->expectsJson() ? null : route('login');
+        // Route API murni: jangan redirect ke route('login') (tidak ada di API, sebabkan 500).
+        // Middleware akan otomatis memberi respons 401 JSON untuk request tanpa token.
+        return null;
     }
 }
