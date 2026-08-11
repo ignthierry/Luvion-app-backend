@@ -98,6 +98,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/accounting/reports/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'getBalanceSheet']);
     Route::get('/accounting/reports/income-statement', [\App\Http\Controllers\AccountingController::class, 'getIncomeStatement']);
+    Route::get('/accounting/ledger', [\App\Http\Controllers\AccountingController::class, 'getLedger']);
 
     // Pembiayaan (Expenses) Routes
     Route::get('/expenses', [\App\Http\Controllers\ExpenseController::class, 'index']);

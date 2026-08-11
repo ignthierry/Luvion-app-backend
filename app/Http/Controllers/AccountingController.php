@@ -234,9 +234,115 @@ class AccountingController extends Controller
         ]);
     }
 
+    /**
+     * Buku Besar (General Ledger): mutasi debit/kredit + saldo berjalan per akun.
+     *
+     * Query params:
+     *   account_id  — filter satu akun (optional, default semua)
+     *   start_date  — awal rentang (optional)
+     *   end_date    — akhir rentang (optional, default hari ini)
+     *   type        — filter tipe akun (Asset/Liability/Equity/Revenue/Expense)
+     *
+     * Saldo dihitung sesuai natural balance:
+     *   Asset & Expense   → saldo = Debit - Kredit
+     *   Liability, Equity & Revenue → saldo = Kredit - Debit
+     */
+    public function getLedger(Request $request)
+    {
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date', date('Y-m-d'));
+
+        $accounts = Account::query()
+            ->when($request->query('account_id'), function ($q, $id) {
+                $q->where('id', $id);
+            })
+            ->when($request->query('type'), function ($q, $type) {
+                $q->where('type', $type);
+            })
+            ->orderBy('code')
+            ->get();
+
+        $result = [];
+
+        foreach ($accounts as $account) {
+            $debitNatural = in_array($account->type, ['Asset', 'Expense']);
+
+            // Semua detail jurnal akun ini (tanpa filter tanggal untuk saldo awal)
+            $detailsQuery = $account->journalDetails()
+                ->with('journal')
+                ->orderBy('journal.date')
+                ->orderBy('journal.id');
+
+            $details = $detailsQuery->get();
+
+            // Saldo awal = akumulasi sebelum start_date (jika ada)
+            $openingBalance = 0;
+            $mutations = [];
+
+            foreach ($details as $detail) {
+                $journalDate = $detail->journal ? $detail->journal->date : null;
+                $d = (float) $detail->debit;
+                $c = (float) $detail->credit;
+                $delta = $debitNatural ? ($d - $c) : ($c - $d);
+
+                if ($startDate && $journalDate && $journalDate < $startDate) {
+                    $openingBalance += $delta;
+                    continue;
+                }
+
+                if ($endDate && $journalDate && $journalDate > $endDate) {
+                    continue;
+                }
+
+                $mutations[] = [
+                    'id' => $detail->id,
+                    'journal_id' => $detail->journal_id,
+                    'journal_reference' => $detail->journal ? $detail->journal->reference : '-',
+                    'journal_description' => $detail->journal ? $detail->journal->description : '-',
+                    'date' => $journalDate,
+                    'debit' => $d,
+                    'credit' => $c,
+                    'description' => $detail->description,
+                ];
+            }
+
+            // Saldo berjalan per baris
+            $runningBalance = $openingBalance;
+            foreach ($mutations as &$m) {
+                $delta = $debitNatural ? ($m['debit'] - $m['credit']) : ($m['credit'] - $m['debit']);
+                $runningBalance += $delta;
+                $m['balance'] = round($runningBalance, 2);
+            }
+            unset($m);
+
+            $totalDebit = array_sum(array_column($mutations, 'debit'));
+            $totalCredit = array_sum(array_column($mutations, 'credit'));
+            $closingBalance = round($openingBalance + ($debitNatural ? ($totalDebit - $totalCredit) : ($totalCredit - $totalDebit)), 2);
+
+            $result[] = [
+                'account' => [
+                    'id' => $account->id,
+                    'code' => $account->code,
+                    'name' => $account->name,
+                    'type' => $account->type,
+                ],
+                'opening_balance' => round($openingBalance, 2),
+                'closing_balance' => $closingBalance,
+                'total_debit' => round($totalDebit, 2),
+                'total_credit' => round($totalCredit, 2),
+                'mutations' => $mutations,
+            ];
+        }
+
+        return response()->json([
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'accounts' => $result,
+        ]);
+    }
+
     private function calculateNetIncome($endDate)
     {
-        // Calculate total revenues - total expenses up to $endDate
         $accounts = Account::whereIn('type', ['Revenue', 'Expense'])
             ->with(['journalDetails' => function ($q) use ($endDate) {
                 $q->whereHas('journal', function ($q2) use ($endDate) {
