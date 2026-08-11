@@ -268,12 +268,13 @@ class AccountingController extends Controller
             $debitNatural = in_array($account->type, ['Asset', 'Expense']);
 
             // Semua detail jurnal akun ini (tanpa filter tanggal untuk saldo awal)
-            $detailsQuery = $account->journalDetails()
+            $details = $account->journalDetails()
                 ->with('journal')
-                ->orderBy('journal.date')
-                ->orderBy('journal.id');
-
-            $details = $detailsQuery->get();
+                ->get()
+                ->sortBy(function ($detail) {
+                    return $detail->journal ? $detail->journal->date : '0000-00-00';
+                })
+                ->values();
 
             // Saldo awal = akumulasi sebelum start_date (jika ada)
             $openingBalance = 0;
