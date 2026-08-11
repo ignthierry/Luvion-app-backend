@@ -9,4 +9,11 @@ return [
     'npwp' => '10.000.000.1-063.725',
     'director' => 'I Gusti Ngurah Thierry Agusta',
     'klu' => '62010 - Aktivitas Pemrograman Komputer',
+
+    // Rezim pajak:
+    //   tax_regime: 'final_umkm' (PPh Final 0,5% utk omzet < 4,8M) | 'normal' (tarif 22%)
+    //   tax_subject_type: 'pt_perorangan' | 'orang_pribadi' | 'badan'
+    //   Catatan: khusus Orang Pribadi, omzet s.d. Rp500 jt pertama bebas pajak (tidak kena 0,5%)
+    'tax_regime' => 'final_umkm',
+    'tax_subject_type' => 'pt_perorangan',
 ];

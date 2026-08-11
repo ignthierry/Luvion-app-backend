@@ -175,15 +175,46 @@ class ExportController extends Controller
         $balance = $this->balanceData($endDate);
 
         $netIncome = max($report['net_income'], 0);
-        // Tarif PPh Badan 22% (UU HPP). WP dengan peredaran ≤ 50M dapat fasilitas 50% atas PKP s.d. 4,8M (Pasal 31E)
-        $pkpUpTo4800 = min($netIncome, 4800000000);
-        $pph = ($pkpUpTo4800 * 0.5 * 0.22) + (max($netIncome - $pkpUpTo4800, 0) * 0.22);
+        $grossRevenue = $report['total_revenue'];
+        $regime = config('company.tax_regime', 'normal');
+        $subjectType = config('company.tax_subject_type', 'badan');
+
+        // Default: rezim normal tarif 22% (UU HPP) + fasilitas Pasal 31E (50% utk PKP s.d. 4,8M, peredaran <= 50M)
+        $pph = 0;
+        $taxMode = 'normal_22';
+        $taxDescription = 'PPh Badan 22%';
+
+        if ($regime === 'final_umkm' && $grossRevenue < 4800000000) {
+            // PPh Final UMKM 0,5% dari omzet (PP 55/2022) — berlaku utk WOP & PT Perorangan
+            $taxMode = 'final_umkm';
+            $taxDescription = 'PPh Final UMKM 0,5% (PP 55/2022)';
+
+            if ($subjectType === 'orang_pribadi') {
+                // Omzet s.d. Rp500 juta pertama bebas pajak (tidak kena 0,5%)
+                $taxable = max($grossRevenue - 500000000, 0);
+                $pph = $taxable * 0.005;
+                $taxDescription = 'PPh Final 0,5% atas omzet > Rp500 juta (WOP, PP 55/2022)';
+            } else {
+                // PT Perorangan: seluruh omzet dikenakan 0,5%
+                $pph = $grossRevenue * 0.005;
+            }
+        } else {
+            // Rezim normal: tarif 22% + fasilitas Pasal 31E
+            $pkpUpTo4800 = min($netIncome, 4800000000);
+            $pph = ($pkpUpTo4800 * 0.5 * 0.22) + (max($netIncome - $pkpUpTo4800, 0) * 0.22);
+        }
 
         $pdf = Pdf::loadView('exports.spt', [
             'report' => $report,
             'balance' => $balance,
             'year' => $year,
             'pph' => round($pph),
+            'taxMode' => $taxMode,
+            'taxDescription' => $taxDescription,
+            'grossRevenue' => $grossRevenue,
+            'netIncome' => $netIncome,
+            'regime' => $regime,
+            'subjectType' => $subjectType,
         ])->setPaper('a4', 'portrait');
 
         return $pdf->download('SPT-1771-' . $year . '.pdf');

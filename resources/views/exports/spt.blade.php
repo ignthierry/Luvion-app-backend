@@ -77,14 +77,33 @@
     </tr>
 </table>
 
-<h2>C. PERHITUNGAN PPh TERUTANG (Angsuran PPh 25 / Final)</h2>
+<h2>C. PERHITUNGAN PPh TERUTANG</h2>
 <div class="box">
+@if($taxMode === 'final_umkm')
 <table>
-    <tr><td style="width:60%">Penghasilan Kena Pajak (PKP) = Laba Sebelum Pajak</td><td class="r">{{ number_format(max($report['net_income'], 0), 0, ',', '.') }}</td></tr>
+    <tr><td style="width:60%">Rezim Pajak</td><td class="c"><b>PPh FINAL UMKM 0,5%</b> (PP 55/2022)</td></tr>
+    <tr><td>Peredaran Bruto (Omzet) Tahun {{ $year }}</td><td class="r">{{ number_format($grossRevenue, 0, ',', '.') }}</td></tr>
+    @if($subjectType === 'orang_pribadi')
+    <tr><td>Omzet Bebas Pajak (Rp500 juta pertama, khusus WOP)</td><td class="r">(500.000.000)</td></tr>
+    <tr><td>Omzet Kena Pajak (0,5%)</td><td class="r">{{ number_format(max($grossRevenue - 500000000, 0), 0, ',', '.') }}</td></tr>
+    @endif
+    <tr class="grand"><td>PPh Final Terutang (0,5% × Omzet Kena Pajak)</td><td class="r">{{ number_format($pph, 0, ',', '.') }}</td></tr>
+    <tr><td colspan="2" class="muted">
+        @if($subjectType === 'orang_pribadi')
+        * Omzet s.d. Rp500 juta pertama per tahun <b>bebas pajak</b> (tidak dikenakan PPh 0,5%) — khusus Wajib Pajak Orang Pribadi.
+        @else
+        * Berlaku utk Wajib Pajak Orang Pribadi & PT Perorangan dengan peredaran bruto di bawah Rp4,8 miliar/tahun.
+        @endif
+    </td></tr>
+</table>
+@else
+<table>
+    <tr><td style="width:60%">Penghasilan Kena Pajak (PKP) = Laba Sebelum Pajak</td><td class="r">{{ number_format($netIncome, 0, ',', '.') }}</td></tr>
     <tr><td>Tarif PPh Badan (UU HPP, pasal 17/31E)</td><td class="c">22%</td></tr>
     <tr class="grand"><td>PPh Terutang (22% × PKP)</td><td class="r">{{ number_format($pph, 0, ',', '.') }}</td></tr>
     <tr><td class="muted" colspan="2">* Untuk WP dengan peredaran bruto ≤ Rp50 M, fasilitas pengurangan 50% berlaku atas bagian PKP sampai Rp4,8 M (Pasal 31E UU PPh)</td></tr>
 </table>
+@endif
 </div>
 
 <table class="sign">
