@@ -116,6 +116,78 @@ class AccountingController extends Controller
         }
     }
 
+    public function updateJournal(Request $request, $id)
+    {
+        $journal = Journal::with('details')->findOrFail($id);
+
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'reference' => 'required|string|unique:journals,reference,' . $id,
+            'description' => 'required|string',
+            'details' => 'required|array|min:2',
+            'details.*.account_id' => 'required|exists:accounts,id',
+            'details.*.debit' => 'required|numeric|min:0',
+            'details.*.credit' => 'required|numeric|min:0',
+            'details.*.description' => 'nullable|string',
+        ]);
+
+        $totalDebit = collect($validated['details'])->sum('debit');
+        $totalCredit = collect($validated['details'])->sum('credit');
+
+        if (abs($totalDebit - $totalCredit) > 0.01) {
+            return response()->json(['message' => 'Debit and Credit must be balanced', 'debit' => $totalDebit, 'credit' => $totalCredit], 400);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Update journal header
+            $journal->update([
+                'date' => $validated['date'],
+                'reference' => $validated['reference'],
+                'description' => $validated['description'],
+                'total_amount' => $totalDebit,
+            ]);
+
+            // Delete old details & create new ones (simpler than diff)
+            $journal->details()->delete();
+            foreach ($validated['details'] as $detail) {
+                JournalDetail::create([
+                    'journal_id' => $journal->id,
+                    'account_id' => $detail['account_id'],
+                    'debit' => $detail['debit'],
+                    'credit' => $detail['credit'],
+                    'description' => $detail['description'] ?? null,
+                ]);
+            }
+
+            DB::commit();
+            return response()->json(['message' => 'Journal entry updated successfully', 'data' => $journal->load('details.account')], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Failed to update journal entry', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function deleteJournal($id)
+    {
+        $journal = Journal::with('details')->findOrFail($id);
+
+        try {
+            DB::beginTransaction();
+
+            // Delete details first (cascade would do this, but explicit is safe)
+            $journal->details()->delete();
+            $journal->delete();
+
+            DB::commit();
+            return response()->json(['message' => 'Journal entry deleted successfully'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Failed to delete journal entry', 'error' => $e->getMessage()], 500);
+        }
+    }
+
     // ==========================================
     // REPORTS
     // ==========================================

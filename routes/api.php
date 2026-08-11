@@ -95,6 +95,8 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/accounting/journals', [\App\Http\Controllers\AccountingController::class, 'getJournals']);
     Route::post('/accounting/journals', [\App\Http\Controllers\AccountingController::class, 'storeJournal']);
+    Route::put('/accounting/journals/{id}', [\App\Http\Controllers\AccountingController::class, 'updateJournal']);
+    Route::delete('/accounting/journals/{id}', [\App\Http\Controllers\AccountingController::class, 'deleteJournal']);
     
     Route::get('/accounting/reports/balance-sheet', [\App\Http\Controllers\AccountingController::class, 'getBalanceSheet']);
     Route::get('/accounting/reports/income-statement', [\App\Http\Controllers\AccountingController::class, 'getIncomeStatement']);
