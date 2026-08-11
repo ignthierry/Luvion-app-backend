@@ -16,6 +16,7 @@
 </style>
 </head>
 <body>
+@include('exports.partials.header')
 <h1>LAPORAN LABA RUGI</h1>
 <div class="sub">Periode: {{ $start }} s/d {{ $end }} — Luvion Enterprise</div>
 

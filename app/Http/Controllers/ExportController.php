@@ -163,6 +163,32 @@ class ExportController extends Controller
         return $pdf->download('neraca-' . date('Ymd') . '.pdf');
     }
 
+    /**
+     * Export SPT Tahunan Badan (1771) ke PDF
+     */
+    public function sptPdf(Request $request)
+    {
+        $year = $request->query('year', date('Y'));
+        $startDate = $year . '-01-01';
+        $endDate = $year . '-12-31';
+        $report = $this->incomeData($startDate, $endDate);
+        $balance = $this->balanceData($endDate);
+
+        $netIncome = max($report['net_income'], 0);
+        // Tarif PPh Badan 22% (UU HPP). WP dengan peredaran ≤ 50M dapat fasilitas 50% atas PKP s.d. 4,8M (Pasal 31E)
+        $pkpUpTo4800 = min($netIncome, 4800000000);
+        $pph = ($pkpUpTo4800 * 0.5 * 0.22) + (max($netIncome - $pkpUpTo4800, 0) * 0.22);
+
+        $pdf = Pdf::loadView('exports.spt', [
+            'report' => $report,
+            'balance' => $balance,
+            'year' => $year,
+            'pph' => round($pph),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('SPT-1771-' . $year . '.pdf');
+    }
+
     // ==========================================
     // HELPERS
     // ==========================================

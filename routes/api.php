@@ -107,6 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/accounting/export/income/pdf', [\App\Http\Controllers\ExportController::class, 'incomePdf']);
     Route::get('/accounting/export/balance/excel', [\App\Http\Controllers\ExportController::class, 'balanceExcel']);
     Route::get('/accounting/export/balance/pdf', [\App\Http\Controllers\ExportController::class, 'balancePdf']);
+    Route::get('/accounting/export/spt/pdf', [\App\Http\Controllers\ExportController::class, 'sptPdf']);
 
     // Pembiayaan (Expenses) Routes
     Route::get('/expenses', [\App\Http\Controllers\ExpenseController::class, 'index']);

@@ -17,6 +17,7 @@
 </style>
 </head>
 <body>
+@include('exports.partials.header')
 <h1>BUKU BESAR (GENERAL LEDGER)</h1>
 <div class="sub">Periode: {{ $start }} s/d {{ $end }} — Luvion Enterprise</div>
 

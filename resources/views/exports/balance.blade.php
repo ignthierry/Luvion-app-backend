@@ -17,6 +17,7 @@
 </style>
 </head>
 <body>
+@include('exports.partials.header')
 <h1>NERACA</h1>
 <div class="sub">Per {{ $end }} — Luvion Enterprise</div>
 
