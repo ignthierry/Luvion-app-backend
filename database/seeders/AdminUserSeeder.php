@@ -15,7 +15,7 @@ class AdminUserSeeder extends Seeder
     public function run(): void
     {
         User::firstOrCreate(
-            ['email' => 'admin@luvion.ai'],
+            ['email' => 'admin@luvion.my.id'],
             [
                 'name' => 'Luvion Admin',
                 'password' => Hash::make('password'),
