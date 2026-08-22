@@ -25,8 +25,9 @@ Route::get('/faq', [\App\Http\Controllers\FaqController::class, 'index']);
 Route::post('/orders', [\App\Http\Controllers\ClientOrderController::class, 'store']);
 Route::get('/invoices/{id}', [\App\Http\Controllers\InvoiceController::class, 'show']);
 
-// Xendit Webhook Notification
+// Webhooks
 Route::match(['get', 'post'], '/xendit/webhook', [\App\Http\Controllers\InvoiceController::class, 'handleWebhook']);
+Route::post('/webhooks/google-calendar', [\App\Http\Controllers\AppointmentController::class, 'handleGoogleWebhook']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -79,6 +80,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin Appointments management routes
     Route::get('/appointments', [\App\Http\Controllers\AppointmentController::class, 'index']);
     Route::post('/appointments', [\App\Http\Controllers\AppointmentController::class, 'store']);
+    Route::post('/appointments/sync-google-calendar', [\App\Http\Controllers\AppointmentController::class, 'syncGoogleCalendar']);
+    Route::post('/appointments/import-ics', [\App\Http\Controllers\AppointmentController::class, 'importIcs']);
     Route::put('/appointments/{id}', [\App\Http\Controllers\AppointmentController::class, 'update']);
     Route::delete('/appointments/{id}', [\App\Http\Controllers\AppointmentController::class, 'destroy']);
 

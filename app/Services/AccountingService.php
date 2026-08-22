@@ -112,16 +112,17 @@ class AccountingService
             return Journal::where('reference', $ref)->first();
         }
 
-        // Expense account: from the linked account, else default by category.
-        $expenseAccount = $expense->account
-            ?? Account::where('code', static::codeForCategory($expense->category))->first()
+        // Expense account (Debit): default by category code (5001..5015) or first Expense account
+        $expenseAccount = Account::where('code', static::codeForCategory($expense->category))->first()
+            ?? ($expense->account && $expense->account->type === 'Expense' ? $expense->account : null)
             ?? Account::where('type', 'Expense')->first();
         if (!$expenseAccount) {
             return null;
         }
 
-        // Cash account: default Kas Tunai (1001).
-        $cashAccount = Account::where('code', '1001')->first()
+        // Cash / Bank account (Credit): user selected account_id (Kas Tunai, Rekening Bank BCA, Merchant BCA, etc.)
+        $cashAccount = ($expense->account && $expense->account->type === 'Asset' ? $expense->account : null)
+            ?? Account::where('code', '1001')->first()
             ?? Account::where('type', 'Asset')->first();
         if (!$cashAccount) {
             return null;
@@ -150,7 +151,7 @@ class AccountingService
                 'account_id' => $cashAccount->id,
                 'debit' => 0,
                 'credit' => $expense->amount,
-                'description' => 'Pembayaran ' . $expense->category,
+                'description' => 'Pembayaran ' . $expense->category . ' (' . $cashAccount->name . ')',
             ]);
 
             DB::commit();
